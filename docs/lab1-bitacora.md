@@ -13,8 +13,8 @@
 
 | # | Función | Línea | Qué sospechas | Dato de entrada (*source*) | Destino peligroso (*sink*) |
 |---|---|---|---|---|---|
-| 1 |  |  |  |  |  |
-| 2 |  |  |  |  |  |
+| 1 | reporte_auditoria.py | La línea de SMTP_PASSWORD | Contraseña hardcodeada | Credencial/contraseña | SMTP_PASSWORD |
+| 2 | reporte_auditoria.py  | La línea de md5() | Uso de MD5 para hashing | Datos que se quieren proteger | md5() |
 | 3 |  |  |  |  |  |
 | 4 |  |  |  |  |  |
 | 5 |  |  |  |  |  |
@@ -97,3 +97,21 @@ justificación.
 10.
 11.
 12.
+
+## Backlog del laboratorio (Issues)
+
+| Issue | Título | PR o evidencia de cierre |
+|---|---|---|
+| #1 | Adopt an international pull request template | |
+| #2 | Run SAST (SonarQube Cloud and CodeQL) on every pull request | |
+| #3 | Block insecure commits with a Semgrep pre-commit hook | |
+| #4 | Enable Dependabot alerts and security updates | |
+| #5 | Remediate the findings of the security audit | |
+| #6 | Upgrade the vulnerable dependencies | |
+| #7 | Publish the audit log and the before/after evidence | |
+| #8 | Detect ReportAudit credentials in the whole Git history | |
+| #9 | Make SCA and secret scanning required checks on main | |
+| #10 | Publish a security policy and a private vulnerability reporting channel | |
+| #11 | Release v1.0.0 with an SBOM and signed provenance | |
+| #12 | Measure supply-chain maturity with OpenSSF Scorecard | |
+| #13 | Build the CRA evidence index | |
