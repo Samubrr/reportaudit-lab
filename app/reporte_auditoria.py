@@ -50,27 +50,25 @@ def buscar_reportes_cliente(nombre_cliente, ruta_db=RUTA_DB):
 
 
 
-NOMBRE_HTML_VALIDO = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*\.html$")
-
 DIRECTORIO_REPORTES = Path(__file__).resolve().parent.parent / "reportes"
+
+REPORTES_AUTORIZADOS = {
+    "informe.html": (
+        DIRECTORIO_REPORTES / "informe.html",
+        DIRECTORIO_REPORTES / "informe.html.pdf",
+    ),
+}
 
 
 def convertir_a_pdf(nombre_archivo):
-    """Convierte un reporte HTML a PDF dentro del directorio autorizado."""
+    """Convierte un reporte HTML autorizado a PDF."""
 
-    if (
-        not isinstance(nombre_archivo, str)
-        or not NOMBRE_HTML_VALIDO.fullmatch(nombre_archivo)
-        or Path(nombre_archivo).name != nombre_archivo
-    ):
+    rutas = REPORTES_AUTORIZADOS.get(nombre_archivo)
+
+    if rutas is None:
         raise ValueError("Nombre de archivo no válido")
 
-    directorio = DIRECTORIO_REPORTES.resolve()
-    entrada = (directorio / nombre_archivo).resolve()
-    salida = (directorio / (nombre_archivo + ".pdf")).resolve()
-
-    if entrada.parent != directorio or salida.parent != directorio:
-        raise ValueError("Ruta de archivo no válida")
+    entrada, salida = rutas
 
     try:
         subprocess.run(
@@ -81,7 +79,7 @@ def convertir_a_pdf(nombre_archivo):
     except FileNotFoundError:
         print("Aviso: wkhtmltopdf no está instalado; no se generó el PDF.")
 
-    return nombre_archivo + ".pdf"
+    return salida.name
 
 
 def hash_password_legacy(password):
