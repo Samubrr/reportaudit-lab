@@ -67,7 +67,6 @@ cualquier diferencia.
 **Documento VEX:** copia `plantillas/reportaudit.openvex.json` a
 `docs/evidencias/`, rellénalo, enlázalo aquí y resume en una frase la
 justificación.
-
 ---
 
 ## Parte L y M — Antes y después
@@ -83,7 +82,53 @@ justificación.
 
 ---
 
+### P. Puertas obligatorias en main
+
+| Check | ¿Exigido en main? | Resultado en las pruebas |
+|---|---|---|
+| SAST - SonarQube Cloud | Sí | Correcto (verde) |
+| SAST - CodeQL | Sí | Correcto (verde) |
+| SCA - pip-audit | Sí | Fallido inicialmente (rojo); corregido localmente |
+| Secretos - Gitleaks | Sí | Correcto (verde) |
+
+**Configuración realizada**
+
+Se añadieron los jobs `sca-pip-audit` y `secretos-gitleaks` al workflow `cadena-suministro.yml` en una rama de prueba.
+
+En GitHub se configuró la protección de la rama `main` para exigir los cuatro checks de seguridad y mantener la aprobación de una Pull Request antes de fusionar cambios. También se comprobó que Push Protection estaba activada.
+
+**Prueba de la puerta SCA**
+
+En la primera prueba se utilizaron temporalmente Flask 3.0.0 y Werkzeug 3.0.1. `pip-audit` detectó 15 vulnerabilidades conocidas en ambos paquetes y terminó con código de salida 1, haciendo fallar el check.
+
+Posteriormente, en una nueva Pull Request limpia, el análisis detectó 2 vulnerabilidades en Flask 3.0.0. Se identificó la vulnerabilidad `PYSEC-2026-2151`, cuya versión corregida es Flask 3.1.3.
+
+Se actualizó Flask a la versión 3.1.3 en `requirements.in` y se regeneró `requirements.txt` mediante `pip-compile`. También se eliminaron las dependencias antiguas de Blinker e Itsdangerous.
+
+La comprobación local posterior con `pip-audit -r requirements.txt` devolvió el resultado `No known vulnerabilities found`.
+
+Además, se eliminó del workflow el parámetro `disable-pip`, que no estaba admitido por la versión utilizada de la acción.
+
+
+
+**1. ¿Qué diferencia hay entre una alerta de Dependabot y el check SCA - pip-audit?**
+
+Dependabot detecta vulnerabilidades en las dependencias y genera alertas, además de poder proponer actualizaciones mediante Pull Requests. Sin embargo, una alerta por sí sola no impide fusionar cambios.
+
+Por el contrario, `pip-audit` analiza las dependencias del proyecto y, al configurarse como un check obligatorio, impide que se fusione una Pull Request cuando detecta vulnerabilidades conocidas.
+
+**2. ¿Por qué no se exigió pip-audit desde la Parte G?**
+
+Porque antes era necesario corregir las vulnerabilidades existentes en las dependencias durante la Parte M. Si se hubiera exigido desde la Parte G, los Pull Requests habrían quedado bloqueados mientras siguieran existiendo esas vulnerabilidades.
+
+Se aplicó una estrategia progresiva denominada *ratchet* o trinquete: primero se corrigen los problemas existentes y después se establece la comprobación obligatoria para evitar que vuelvan a introducirse.
+
+**Conclusión**
+
+Se configuraron cuatro comprobaciones de seguridad obligatorias para `main`. Las pruebas permitieron comprobar que `pip-audit` detecta dependencias vulnerables y bloquea los cambios hasta que se corrigen. La actualización de Flask eliminó las vulnerabilidades detectadas en la comprobación local.
+
 ## Preguntas de comprobación (Sección 7 de la guía)
+
 
 1.
 2.
