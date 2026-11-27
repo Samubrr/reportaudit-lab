@@ -67,6 +67,7 @@ cualquier diferencia.
 **Documento VEX:** copia `plantillas/reportaudit.openvex.json` a
 `docs/evidencias/`, rellénalo, enlázalo aquí y resume en una frase la
 justificación.
+
 ---
 
 ## Parte L y M — Antes y después
@@ -81,54 +82,71 @@ justificación.
 | Alertas abiertas de Dependabot |  |  |
 
 ---
+### Q. Divulgación coordinada (simulacro)
 
-### P. Puertas obligatorias en main
+**Primera parte: compañero como investigador y yo como responsable del producto.**
 
-| Check | ¿Exigido en main? | Resultado en las pruebas |
-|---|---|---|
-| SAST - SonarQube Cloud | Sí | Correcto (verde) |
-| SAST - CodeQL | Sí | Correcto (verde) |
-| SCA - pip-audit | Sí | Fallido inicialmente (rojo); corregido localmente |
-| Secretos - Gitleaks | Sí | Correcto (verde) |
+- **Informe recibido de:** `juanmi2109`.
+- **Identificador del borrador de aviso:** `GHSA-hch6-pqq8-wgqg`.
+- **Título:** SQL injection in `/reportes` (cliente parameter) in versions before 1.0.0.
+- **Estado:** Draft (borrador privado).
+- **Severidad mostrada por GitHub:** Moderate.
+- **Vector CVSS:** pendiente de verificar el vector definitivo del borrador.
+- **CWE:** CWE-89 — SQL Injection.
+- **Paquete:** `reportaudit` (ecosistema `pip`).
+- **Versiones afectadas:** `< 1.0.0`.
+- **Versión corregida:** `1.0.0`.
+- **Créditos:** `juanmi2109`, con el rol Reporter.
+- **Comentario:** se añadió un agradecimiento en inglés al investigador en la conversación privada del borrador.
+- **Evidencias:** capturas del informe recibido, aceptación como borrador, configuración del advisory y comentario de agradecimiento.
 
-**Configuración realizada**
+**Segunda parte: pendiente.** Falta que yo informe de una vulnerabilidad en el repositorio de Juanmi y que él gestione el aviso como responsable del producto. Por tanto, el simulacro Q.3 todavía no está completado en su totalidad.
 
-Se añadieron los jobs `sca-pip-audit` y `secretos-gitleaks` al workflow `cadena-suministro.yml` en una rama de prueba.
+El advisory de este repositorio se mantiene como borrador privado. No se ha solicitado un CVE ni se ha publicado el aviso.
 
-En GitHub se configuró la protección de la rama `main` para exigir los cuatro checks de seguridad y mantener la aprobación de una Pull Request antes de fusionar cambios. También se comprobó que Push Protection estaba activada.
+### R. Versión 1.0.0 verificable
 
-**Prueba de la puerta SCA**
+**R.1 — Publicación automatizada**
 
-En la primera prueba se utilizaron temporalmente Flask 3.0.0 y Werkzeug 3.0.1. `pip-audit` detectó 15 vulnerabilidades conocidas en ambos paquetes y terminó con código de salida 1, haciendo fallar el check.
+- Workflow: `.github/workflows/publicar-version.yml`.
+- Rama de publicación: `main`.
+- Etiqueta Git: `v1.0.0`.
+- Resultado: ejecución correcta del workflow `Publicar versión firmada`.
+- Commit del workflow: `b4eb6c7`.
+- Resultado: Release publicada correctamente en GitHub.
 
-Posteriormente, en una nueva Pull Request limpia, el análisis detectó 2 vulnerabilidades en Flask 3.0.0. Se identificó la vulnerabilidad `PYSEC-2026-2151`, cuya versión corregida es Flask 3.1.3.
+**R.2 — Release v1.0.0**
 
-Se actualizó Flask a la versión 3.1.3 en `requirements.in` y se regeneró `requirements.txt` mediante `pip-compile`. También se eliminaron las dependencias antiguas de Blinker e Itsdangerous.
+- Enlace: https://github.com/Samubrr/reportaudit-lab/releases/tag/v1.0.0
+- Archivos publicados:
+  - `reportaudit-1.0.0.tar.gz`
+  - `reportaudit-provenance.sigstore.json`
+  - `reportaudit-sbom.cdx.json`
+  - `reportaudit-sbom.sigstore.json`
+  - `SHA256SUMS`
 
-La comprobación local posterior con `pip-audit -r requirements.txt` devolvió el resultado `No known vulnerabilities found`.
+**R.3 — Verificación como cliente**
 
-Además, se eliminó del workflow el parámetro `disable-pip`, que no estaba admitido por la versión utilizada de la acción.
+- Descarga: se descargaron los archivos de la Release mediante `gh release download v1.0.0`.
+- Integridad: `sha256sum -c SHA256SUMS` devolvió `OK` para el paquete y el SBOM.
+- Procedencia SLSA: `gh attestation verify reportaudit-1.0.0.tar.gz --repo "$REPO"` devolvió `Verification succeeded!`.
+- SBOM CycloneDX: la verificación con `--predicate-type https://cyclonedx.org/bom` también devolvió `Verification succeeded!`.
+- Prueba de manipulación: se creó una copia del paquete llamada `alterado.tar.gz` y se añadió el texto `puerta trasera`. Su huella SHA-256 cambió:
+  - Original: `ffdd5c346d3b199db2b169b2040767f0c34b668295c366100f06eb3fa329fddf`
+  - Alterado: `912de56f8375df7423d02ea0c22c233942ed976d79569f361491b52e45e32325`
+- Verificación del archivo alterado: GitHub devolvió `HTTP 404: Not Found` al buscar una atestación para la nueva huella. La prueba detectó correctamente que el archivo modificado no tenía una atestación asociada.
 
+**Incidencia**
 
-
-**1. ¿Qué diferencia hay entre una alerta de Dependabot y el check SCA - pip-audit?**
-
-Dependabot detecta vulnerabilidades en las dependencias y genera alertas, además de poder proponer actualizaciones mediante Pull Requests. Sin embargo, una alerta por sí sola no impide fusionar cambios.
-
-Por el contrario, `pip-audit` analiza las dependencias del proyecto y, al configurarse como un check obligatorio, impide que se fusione una Pull Request cuando detecta vulnerabilidades conocidas.
-
-**2. ¿Por qué no se exigió pip-audit desde la Parte G?**
-
-Porque antes era necesario corregir las vulnerabilidades existentes en las dependencias durante la Parte M. Si se hubiera exigido desde la Parte G, los Pull Requests habrían quedado bloqueados mientras siguieran existiendo esas vulnerabilidades.
-
-Se aplicó una estrategia progresiva denominada *ratchet* o trinquete: primero se corrigen los problemas existentes y después se establece la comprobación obligatoria para evitar que vuelvan a introducirse.
+- Issue #11: `Release v1.0.0 with an SBOM and signed provenance`.
+- Estado: cerrada.
+- Se añadió un comentario indicando la publicación y los resultados de las verificaciones.
 
 **Conclusión**
 
-Se configuraron cuatro comprobaciones de seguridad obligatorias para `main`. Las pruebas permitieron comprobar que `pip-audit` detecta dependencias vulnerables y bloquea los cambios hasta que se corrigen. La actualización de Flask eliminó las vulnerabilidades detectadas en la comprobación local.
+La versión v1.0.0 se ha publicado con SBOM, sumas SHA-256 y atestaciones Sigstore. Se ha comprobado la integridad y procedencia del paquete original y se ha demostrado que una modificación posterior impide encontrar una atestación válida para el archivo alterado.
 
 ## Preguntas de comprobación (Sección 7 de la guía)
-
 
 1.
 2.
