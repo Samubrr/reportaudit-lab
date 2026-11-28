@@ -146,6 +146,86 @@ El advisory de este repositorio se mantiene como borrador privado. No se ha soli
 
 La versión v1.0.0 se ha publicado con SBOM, sumas SHA-256 y atestaciones Sigstore. Se ha comprobado la integridad y procedencia del paquete original y se ha demostrado que una modificación posterior impide encontrar una atestación válida para el archivo alterado.
 
+### S.2. Resultados de OpenSSF Scorecard
+
+Tras integrar el workflow de OpenSSF Scorecard y ejecutarlo sobre la rama `main`, se ha obtenido una puntuación global de **7,0/10**, utilizando Scorecard v5.5.0.
+
+El análisis se ha realizado sobre el commit `ac98aca5c8e5a54c6c522b72d86b506c9abc2d0a`.
+
+Los controles con menor puntuación han sido:
+
+| Control | Puntuación | Explicación |
+|---|---:|---|
+| Maintained | 0 | El repositorio todavía no alcanza los 90 días de antigüedad. |
+| Pinned-Dependencies | 0 | Las acciones de GitHub Actions utilizan etiquetas de versión en lugar de hashes SHA completos. |
+| Fuzzing | 0 | No se ha detectado la utilización de pruebas de fuzzing. |
+| CII-Best-Practices | 0 | No se dispone del distintivo OpenSSF Best Practices. |
+| License | 0 | Scorecard no ha detectado una licencia reconocida en el repositorio. |
+| Contributors | 0 | No se detecta participación de contribuyentes de varias organizaciones. |
+
+Se han obtenido también resultados positivos en controles importantes: Dangerous-Workflow, Dependency-Update-Tool, Binary-Artifacts, Token-Permissions, Vulnerabilities y Security-Policy han obtenido 10 puntos. Code-Review, SAST y CI-Tests han obtenido 9 puntos, mientras que Signed-Releases ha obtenido 8.
+
+Los controles Branch-Protection y Packaging aparecen sin puntuación disponible.
+
+**Conclusión:** ReportAudit obtiene una puntuación global de 7,0/10. Los resultados muestran que se han implantado correctamente varias medidas de seguridad de la cadena de suministro. Sin embargo, existen oportunidades de mejora, especialmente en el uso de dependencias fijadas mediante hashes SHA, las pruebas de fuzzing y la identificación de una licencia. El resultado de Maintained debe interpretarse teniendo en cuenta la antigüedad del repositorio y no como una vulnerabilidad de seguridad.
+
+
+### S.3 — Reto élite: fijar las GitHub Actions por SHA
+
+**Objetivo:** mejorar la seguridad del workflow de publicación fijando las GitHub Actions mediante hashes completos de sus commits, en lugar de utilizar únicamente etiquetas de versión.
+
+**Archivo modificado:**
+- `.github/workflows/publicar-version.yml`
+
+**Acciones fijadas:**
+
+| Acción | Versión | SHA |
+|---|---|---|
+| actions/checkout | v6 | `d23441a48e516b6c34aea4fa41551a30e30af803` |
+| anchore/sbom-action | v0.24.3 | `66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c` |
+| actions/attest | v4 | `1e69f48acb82d1966a394da916b4c1698aa569d6` |
+
+La acción `actions/attest` se utiliza en dos pasos y se ha fijado en ambos. Se mantienen los comentarios con las versiones originales.
+
+**Pull Request y revisión externa:**
+- PR: #31.
+- Título: `ci: pin release workflow actions to commit SHAs`.
+- Revisor externo: `juanmi2109`.
+- Revisión: APPROVED.
+- Checks: 6/6 SUCCESS.
+- Estado: MERGED.
+- Commit: `56f10b0`.
+
+**Verificación mediante OpenSSF Scorecard:**
+- Ejecución: `46043650135`.
+- Rama: `main`.
+- Estado: SUCCESS.
+- Commit analizado: `a6fa3032228b2738e36e0e748035e6008ee8a6a7`.
+- Puntuación global anterior: 7,0/10.
+- Puntuación global posterior: 7,1/10.
+
+**Reflexión:**
+
+El indicador Vulnerabilities resulta especialmente útil para valorar la seguridad de las dependencias, ya que informa sobre vulnerabilidades conocidas. En ReportAudit obtuvo 10/10.
+
+El indicador Maintained puede resultar engañoso si se interpreta sin contexto. ReportAudit obtuvo 0 porque el repositorio tenía menos de 90 días. Esto no significa que sea inseguro, sino que todavía no cumple el criterio temporal de actividad de Scorecard.
+
+**Evidencias:**
+- PR #31 aprobado y fusionado.
+- Checks automáticos satisfactorios.
+- Resultado posterior de OpenSSF Scorecard.
+- Comparación de puntuaciones antes y después.
+
+**Resultado específico de Pinned-Dependencies:**
+
+- Puntuación anterior: 0/10.
+- Puntuación posterior: 1/10.
+- Mejora: +1 punto.
+- Scorecard detecta que las acciones del workflow de publicación están fijadas, pero siguen existiendo referencias sin SHA en `cadena-suministro.yml` y `scorecard.yml`, además de comandos pip sin fijar.
+- Conclusión: mejora parcial de la seguridad de la cadena de suministro. Se ha protegido el workflow de publicación, pero quedan dependencias pendientes en otros workflows.
+
+
+
 ## Preguntas de comprobación (Sección 7 de la guía)
 
 1.
